@@ -37,6 +37,16 @@ impl GoTrueApi {
     where
         Token: Into<String> + Display,
     {
+        let base = Url::parse(&self.url).context(format!("filed to parse url: {}", self.url))?;
+        let api_url = base.join("logout")?;
+        let fetcher = reqwest::Client::new();
+        let _ = fetcher
+            .post(api_url)
+            .headers(self.headers.clone())
+            .bearer_auth(token)
+            .send()
+            .await?;
+        Ok(())
     }
     async fn refreshToken<Token>(&self, jwt: Token)
     where
