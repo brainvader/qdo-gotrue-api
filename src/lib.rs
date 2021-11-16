@@ -55,19 +55,19 @@ impl GoTrueApi {
 
         // let response = fetcher.execute(request).await?;
         let response = request_builder.send().await?;
-        let user = response.json::<User>().await?;
-        Ok(user)
+        // let user = response.json::<User>().await?;
+        // Ok(user)
 
         // let response_text = &response.text().await.expect("can't get text");
         // println!("user: {:#?}", user);
         // let user = serde_json::from_str::<User>(response_text)?;
-        // match response.error_for_status() {
-        //     Ok(res) => Ok(res.json::<User>().await?),
-        //     Err(err) => Err(ApiError {
-        //         message: "Error happend".to_string(),
-        //         status: err.status(),
-        //     })?,
-        // }
+        match response.error_for_status() {
+            Ok(res) => Ok(res.json::<User>().await?),
+            Err(err) => Err(ApiError {
+                message: "Error happend".to_string(),
+                status: err.status(),
+            })?,
+        }
     }
 
     async fn signin<T>(&self, email: T, password: T)
