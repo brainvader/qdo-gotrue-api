@@ -14,46 +14,58 @@ pub struct GoTrueApi {
 }
 
 impl GoTrueApi {
-    fn new<T>(url: T) -> Self
+    pub fn new<T>(url: T, headers: HeaderMap) -> Self
     where
         T: Into<String>,
     {
         Self {
             url: url.into(),
-            headers: HeaderMap::new(),
+            headers: headers,
         }
     }
 }
 
 impl GoTrueApi {
-    async fn singup<T>(&self, email: T, password: T) -> Result<Session>
+    pub async fn singup<T>(&self, email: T, password: T) -> Result<Session>
     where
         T: Into<String>,
     {
         let base_url =
             Url::parse(&self.url).context(format!("filed to parse url: {}", self.url))?;
-        let resource_name = "singup";
+        let signup_path = "/auth/v1/singup";
         let api_url = base_url
-            .join(resource_name)
-            .context(format!("failed to join {}", resource_name))?;
+            .join(signup_path)
+            .context(format!("failed to join {}", signup_path))?;
         let mut body: HashMap<&str, String> = HashMap::new();
         body.insert("email", email.into());
         body.insert("password", password.into());
         let fetcher = reqwest::Client::new();
-        let response = fetcher
+        let request_builder = fetcher
             .post(api_url)
             .headers(self.headers.clone())
-            .json(&body)
-            .send()
-            .await?;
+            .json(&body);
 
-        match response.error_for_status() {
-            Ok(res) => Ok(res.json::<Session>().await?),
-            Err(err) => Err(ApiError {
-                message: "Error happend".to_string(),
-                status: err.status(),
-            })?,
-        }
+        println!("{:#?}", request_builder);
+        let request = request_builder.build().unwrap();
+        let res_body = request.body().unwrap();
+        let body = std::str::from_utf8(res_body.as_bytes().unwrap());
+        println!("{:#?}", body);
+
+        let response = fetcher.execute(request).await?;
+        // let response = request_builder.send().await?;
+        // println!("text: {:#?}", response);
+        let response_text = &response.text().await.expect("can't get text");
+        // println!("text: {:#?}", response_text);
+        let session = serde_json::from_str::<Session>(response_text)?;
+        // let session = response.json::<Session>().await?;
+        Ok(session)
+        // match response.error_for_status() {
+        //     Ok(res) => Ok(res.json::<Session>().await?),
+        //     Err(err) => Err(ApiError {
+        //         message: "Error happend".to_string(),
+        //         status: err.status(),
+        //     })?,
+        // }
     }
 
     async fn signin<T>(&self, email: T, password: T)
@@ -92,18 +104,18 @@ pub struct ApiError {
     status: Option<reqwest::StatusCode>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Session {
-    provider_token: Option<String>,
-    access_token: String,
-    expires_in: Option<i64>,
-    expires_at: Option<i64>,
-    refresh_token: Option<String>,
-    token_type: String,
-    user: Option<User>,
+    pub provider_token: Option<String>,
+    pub access_token: String,
+    pub expires_in: Option<i64>,
+    pub expires_at: Option<i64>,
+    pub refresh_token: Option<String>,
+    pub token_type: String,
+    pub user: Option<User>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct User {
     id: String,
     app_metadata: HashMap<String, serde_json::Value>,
