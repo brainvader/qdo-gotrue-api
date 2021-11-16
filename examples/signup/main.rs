@@ -1,4 +1,3 @@
-use anyhow::Context;
 use qdo_gotrue_api::GoTrueApi;
 
 use dotenv::dotenv;
@@ -19,12 +18,12 @@ async fn main() -> anyhow::Result<()> {
     let apikey_value = HeaderValue::from_str(&anon_key).unwrap();
     headers.insert("apiKey", apikey_value);
     let api = GoTrueApi::new(url, headers);
-    let session = api
-        .singup(email, password)
-        .await
-        .context(format! {"Failed to signup"})?;
+    let user = api.singup(email, password).await;
 
-    println!("{}", session.access_token);
+    match user {
+        Ok(u) => println!("User: {:#?}", u),
+        Err(err) => println!("ApiError: {:#?}", err.source()),
+    }
 
     Ok(())
 }
