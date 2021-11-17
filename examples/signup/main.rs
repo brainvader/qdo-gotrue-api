@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
 
     match user {
         Ok(u) => println!("User: {:#?}", u),
-        Err(err) => println!("ApiError: {:#?}", err.root_cause()),
+        Err(err) => println!("{:#?}", err.root_cause()),
     }
 
     Ok(())
