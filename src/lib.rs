@@ -64,7 +64,7 @@ impl GoTrueApi {
         match response.error_for_status() {
             Ok(res) => Ok(res.json::<User>().await?),
             Err(err) => Err(ApiError {
-                message: "Error happend".to_string(),
+                message: format!("{:#?}", err),
                 status: err.status(),
             })?,
         }
